@@ -1,0 +1,10 @@
+pub mod audit_log;
+pub mod backup;
+pub mod check;
+pub mod completions;
+pub mod entries;
+pub mod generate;
+pub mod init;
+pub mod passwd;
+pub mod shell;
+pub mod totp_cmd;

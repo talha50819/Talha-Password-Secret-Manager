@@ -1,0 +1,17 @@
+# Rust build artifacts
+/target/
+crates/*/target/
+
+# Never commit an actual vault, audit log, keyfile, or backup produced while testing locally
+*.vkl
+*.audit.log
+*.lock
+!Cargo.lock
+*.pem
+*.key
+
+# Editor/OS cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

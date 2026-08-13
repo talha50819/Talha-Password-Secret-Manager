@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/vault-core", "crates/vault-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+authors = ["Vaultkeep Contributors"]
+repository = "https://github.com/talha50819/vaultkeep"
+description = "A local-first, cross-platform password and secret manager."
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

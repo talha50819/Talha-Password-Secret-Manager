@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so RustSec advisory / cargo-deny checks catch newly disclosed CVEs even without
+    # a code change (docs/10-devsecops-cicd.md).
+    - cron: "0 6 * * 1"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy (deny warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  no-networking-in-core:
+    name: vault-core has zero networking dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Verify vault-core's dependency tree carries no networking crate
+        run: |
+          set -euo pipefail
+          TREE=$(cargo tree -p vault-core -e normal --prefix none)
+          echo "$TREE"
+          if echo "$TREE" | grep -Ei '^(reqwest|hyper|tokio|curl|ureq|mio|socket2|native-tls|rustls|openssl)( |$)'; then
+            echo "::error::vault-core's dependency tree includes a networking crate — this violates the offline-only threat model (docs/03-threat-model.md)."
+            exit 1
+          fi
+          echo "OK: no networking crates found in vault-core's dependency tree."
+
+  test:
+    name: Build & test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --workspace --verbose
+      - run: cargo test --workspace --verbose
+
+  audit:
+    name: cargo-audit (RustSec advisories)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  deny:
+    name: cargo-deny (licenses, advisories, bans, sources)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+
+  coverage:
+    name: Coverage (vault-core, informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-llvm-cov --locked
+      - run: cargo llvm-cov -p vault-core --summary-only
