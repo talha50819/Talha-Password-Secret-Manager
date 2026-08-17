@@ -93,6 +93,9 @@ button.primary:hover { background: var(--accent-hover); }
 button.secondary { background: transparent; }
 .error { color: var(--danger); font-size: 12px; min-height: 16px; margin: 4px 0 0; }
 .hint { font-size: 11px; color: var(--muted); margin: -4px 0 4px; }
+.hint.warn { color: var(--danger); }
+.gen-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: -2px 0 4px; }
+.gen-actions .hint { flex-basis: 100%; margin: 4px 0 0; }
 
 /* ---------------- Main screen ---------------- */
 #screen-main { display: flex; flex-direction: column; }

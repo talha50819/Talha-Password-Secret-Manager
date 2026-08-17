@@ -3,9 +3,22 @@ use crate::prompt;
 use std::path::Path;
 use vault_core::{KdfParams, VaultStore};
 
-pub fn run(vault_path: &Path, audit_path: &Path, keyfile: Option<&Path>, kdf_profile: &str, use_stdin: bool) -> CliResult<()> {
+#[allow(clippy::too_many_arguments)]
+pub fn run(
+    vault_path: &Path,
+    audit_path: &Path,
+    keyfile: Option<&Path>,
+    kdf_profile: &str,
+    generate: bool,
+    length: u16,
+    use_stdin: bool,
+) -> CliResult<()> {
     let params = KdfParams::from_profile_name(kdf_profile)?;
-    let password = prompt::prompt_new_master_password("Master password", use_stdin)?;
+    let password = if generate {
+        prompt::prompt_generated_master_password(length, use_stdin)?
+    } else {
+        prompt::prompt_new_master_password("Master password", use_stdin)?
+    };
     let store = VaultStore::create(vault_path, &password, keyfile, params, audit_path)?;
     store.lock();
     println!("Vault created at {}", vault_path.display());

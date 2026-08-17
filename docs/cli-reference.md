@@ -17,7 +17,7 @@ Binary name: `vaultkeep`. Global conventions:
 
 | Command | Purpose |
 |---|---|
-| `vaultkeep init [--vault PATH] [--keyfile PATH] [--kdf-profile default\|interactive\|paranoid]` | Create a new vault; prompts twice for master password. |
+| `vaultkeep init [--vault PATH] [--keyfile PATH] [--kdf-profile default\|interactive\|paranoid] [--generate] [--length N]` | Create a new vault; prompts twice for master password. `--generate` (default length 24) generates a strong CSPRNG master password instead — shown once and printed to the terminal, since it is never stored anywhere; requires explicit confirmation that it was saved before the vault is created. |
 | `vaultkeep add <title> [--username U] [--url U] [--notes N] [--tag T ...] [--generate] [--length N]` | Add an entry. Without `--generate`, prompts for the password interactively. |
 | `vaultkeep get <title-or-id> [--field password\|username\|url\|notes\|totp] [--show]` | Retrieve one field. Default: copy to clipboard, auto-clear. `--show` prints to terminal instead. `--field totp` always prints the current code + countdown (clipboard copy doesn't apply to a value that expires in seconds). |
 | `vaultkeep list [--tag T] [--json]` | List titles/usernames/urls/tags — never passwords. |
@@ -27,7 +27,7 @@ Binary name: `vaultkeep`. Global conventions:
 | `vaultkeep generate [--length N] [--no-upper] [--no-lower] [--no-digits] [--no-symbols] [--allow-ambiguous] [--count N]` | Print one or more generated passwords (does not touch the vault). |
 | `vaultkeep check [<title-or-id> \| --all] [--stale-after-days N] [--json]` | Strength/reuse/age report for one (default) or all entries; `--stale-after-days` (default 365) controls the staleness flag threshold. |
 | `vaultkeep totp <title-or-id>` | Print the current RFC 6238 TOTP code and seconds remaining. |
-| `vaultkeep passwd` | Change the master password / rotate the vault key (rekey, re-derives KDF salt + AEAD nonce). |
+| `vaultkeep passwd [--generate] [--length N]` | Change the master password / rotate the vault key (rekey, re-derives KDF salt + AEAD nonce). `--generate` works the same way as `init --generate`. |
 | `vaultkeep export --output PATH [--plaintext-json --i-understand-the-risk]` | Encrypted backup by default. |
 | `vaultkeep import <path> [--merge]` | Restore from a backup. Default replaces all existing entries; `--merge` adds alongside existing ones, skipping (never overwriting) duplicate titles. |
 | `vaultkeep audit-log [--tail N] [--json]` | View local audit trail (metadata only). |

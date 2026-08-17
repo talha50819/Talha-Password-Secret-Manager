@@ -67,6 +67,12 @@ async function initAuthScreen() {
     $("auth-subtitle").textContent = "No vault found here yet — create one.";
     show($("form-create"));
     hide($("form-unlock"));
+    resetMasterPasswordGenerator({
+      primaryId: "create-password",
+      confirmId: "create-confirm",
+      actionsId: "create-gen-actions",
+      toggleId: "btn-create-toggle-visibility",
+    });
     $("create-password").focus();
   }
 }
@@ -90,10 +96,82 @@ $("form-create").addEventListener("submit", async (e) => {
     await invoke("create_vault", { password: $("create-password").value, confirm: $("create-confirm").value });
     $("create-password").value = "";
     $("create-confirm").value = "";
+    resetMasterPasswordGenerator({
+      primaryId: "create-password",
+      confirmId: "create-confirm",
+      actionsId: "create-gen-actions",
+      toggleId: "btn-create-toggle-visibility",
+    });
     await enterMain();
   } catch (err) {
     $("create-error").textContent = String(err);
   }
+});
+
+// Strong, current-standards default for a *generated master password* (OWASP ASVS 5.0 V2.1 /
+// NIST SP 800-63B Appendix A): CSPRNG-backed, all character classes, comfortably above the
+// recommended entropy floor. Deliberately longer than the entry-password generator's default
+// (20) since this is the single root secret protecting everything else.
+const MASTER_GEN_POLICY = { length: 24, useUpper: true, useLower: true, useDigits: true, useSymbols: true, avoidAmbiguous: true };
+
+// Wires a "generate a strong master password" button (used on both the create-vault form and
+// the change-master-password modal): fills password + confirm, reveals them so the user can
+// actually read/copy what was generated, and offers a one-click copy — since, unlike an entry's
+// password, this value is never stored anywhere and would otherwise be shown exactly once.
+function wireMasterPasswordGenerator({ genBtnId, primaryId, confirmId, actionsId, toggleId, copyId, errorId }) {
+  const primary = $(primaryId);
+  const confirmInput = $(confirmId);
+  const actions = $(actionsId);
+  const toggle = $(toggleId);
+
+  $(genBtnId).addEventListener("click", async () => {
+    try {
+      const pw = await invoke("generate_password", MASTER_GEN_POLICY);
+      primary.value = pw;
+      confirmInput.value = pw;
+      primary.type = "text";
+      confirmInput.type = "text";
+      toggle.textContent = "Hide";
+      show(actions);
+    } catch (err) {
+      if (errorId) $(errorId).textContent = String(err);
+    }
+  });
+
+  toggle.addEventListener("click", () => {
+    const revealed = primary.type === "text";
+    primary.type = revealed ? "password" : "text";
+    confirmInput.type = revealed ? "password" : "text";
+    toggle.textContent = revealed ? "Show" : "Hide";
+  });
+
+  $(copyId).addEventListener("click", () => copyToClipboard(primary.value, "Master password"));
+}
+
+function resetMasterPasswordGenerator({ primaryId, confirmId, actionsId, toggleId }) {
+  $(primaryId).type = "password";
+  $(confirmId).type = "password";
+  $(toggleId).textContent = "Show";
+  hide($(actionsId));
+}
+
+wireMasterPasswordGenerator({
+  genBtnId: "btn-generate-create",
+  primaryId: "create-password",
+  confirmId: "create-confirm",
+  actionsId: "create-gen-actions",
+  toggleId: "btn-create-toggle-visibility",
+  copyId: "btn-create-copy",
+  errorId: "create-error",
+});
+wireMasterPasswordGenerator({
+  genBtnId: "btn-generate-passwd",
+  primaryId: "passwd-new",
+  confirmId: "passwd-confirm",
+  actionsId: "passwd-gen-actions",
+  toggleId: "btn-passwd-toggle-visibility",
+  copyId: "btn-passwd-copy",
+  errorId: "passwd-error",
 });
 
 async function enterMain() {
@@ -332,6 +410,12 @@ $("btn-passwd").addEventListener("click", () => {
   $("passwd-error").textContent = "";
   $("passwd-new").value = "";
   $("passwd-confirm").value = "";
+  resetMasterPasswordGenerator({
+    primaryId: "passwd-new",
+    confirmId: "passwd-confirm",
+    actionsId: "passwd-gen-actions",
+    toggleId: "btn-passwd-toggle-visibility",
+  });
   show($("modal-passwd"));
 });
 $("btn-passwd-cancel").addEventListener("click", () => hide($("modal-passwd")));
@@ -340,6 +424,14 @@ $("form-passwd").addEventListener("submit", async (e) => {
   $("passwd-error").textContent = "";
   try {
     await invoke("change_master_password", { newPassword: $("passwd-new").value, confirm: $("passwd-confirm").value });
+    $("passwd-new").value = "";
+    $("passwd-confirm").value = "";
+    resetMasterPasswordGenerator({
+      primaryId: "passwd-new",
+      confirmId: "passwd-confirm",
+      actionsId: "passwd-gen-actions",
+      toggleId: "btn-passwd-toggle-visibility",
+    });
     hide($("modal-passwd"));
     toast("Master password changed");
   } catch (err) {

@@ -91,6 +91,7 @@ Full command reference: [docs/cli-reference.md](docs/cli-reference.md). Quick to
 
 ```
 vaultkeep init                                    # create a new vault
+vaultkeep init --generate                          # ...or let vaultkeep generate a strong master password for you
 vaultkeep add <title> [--username U] [--generate]  # add an entry
 vaultkeep get <title> [--show]                     # copy (or show) a field
 vaultkeep list / search <query>                    # browse without ever printing secrets
@@ -99,7 +100,7 @@ vaultkeep remove <title>                           # delete an entry
 vaultkeep generate --length 24                     # print standalone generated passwords
 vaultkeep check --all                              # strength/reuse/staleness report
 vaultkeep totp <title>                             # current TOTP code for a stored seed
-vaultkeep passwd                                   # rotate the master password
+vaultkeep passwd [--generate]                      # rotate the master password (optionally generated)
 vaultkeep export --output backup.vkl               # encrypted backup
 vaultkeep import backup.vkl [--merge]               # restore/merge a backup
 vaultkeep audit-log                                # local, metadata-only activity trail

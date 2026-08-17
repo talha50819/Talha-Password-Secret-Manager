@@ -48,6 +48,12 @@ pub enum Command {
     Init {
         #[arg(long, default_value = "default")]
         kdf_profile: String,
+        /// Generate a strong random master password instead of typing one (shown once, never
+        /// stored — save it before continuing).
+        #[arg(long)]
+        generate: bool,
+        #[arg(long, default_value_t = 24)]
+        length: u16,
     },
     /// Add a new entry.
     Add {
@@ -130,7 +136,14 @@ pub enum Command {
     /// Print the current TOTP code for an entry.
     Totp { title: String },
     /// Change the master password (rekeys the vault).
-    Passwd,
+    Passwd {
+        /// Generate a strong random master password instead of typing one (shown once, never
+        /// stored — save it before continuing).
+        #[arg(long)]
+        generate: bool,
+        #[arg(long, default_value_t = 24)]
+        length: u16,
+    },
     /// Export an encrypted backup (or, opt-in, a plaintext JSON dump).
     Export {
         #[arg(long)]
@@ -191,7 +204,7 @@ pub(crate) fn dispatch_authenticated(store: &mut VaultStore, command: Command, u
             commands::check::run(store, title.as_deref(), all, false, stale_after_days)
         }
         Command::Totp { title } => commands::totp_cmd::run(store, &title),
-        Command::Passwd => commands::passwd::run(store, None, use_stdin),
+        Command::Passwd { generate, length } => commands::passwd::run(store, None, generate, length, use_stdin),
         Command::Export { output, plaintext_json, i_understand_the_risk } => {
             commands::backup::export(store, &output, plaintext_json, i_understand_the_risk)
         }
@@ -214,9 +227,15 @@ fn run() -> CliResult<()> {
     let audit_path = config::audit_log_path_for(&vault_path);
 
     let result = match cli.command {
-        Command::Init { kdf_profile } => {
-            commands::init::run(&vault_path, &audit_path, cli.keyfile.as_deref(), &kdf_profile, cli.stdin)
-        }
+        Command::Init { kdf_profile, generate, length } => commands::init::run(
+            &vault_path,
+            &audit_path,
+            cli.keyfile.as_deref(),
+            &kdf_profile,
+            generate,
+            length,
+            cli.stdin,
+        ),
         Command::Generate { length, no_upper, no_lower, no_digits, no_symbols, allow_ambiguous, count } => {
             commands::generate::run(length, no_upper, no_lower, no_digits, no_symbols, allow_ambiguous, count)
         }

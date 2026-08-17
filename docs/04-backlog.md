@@ -30,6 +30,8 @@ implementation follows.
 **Feature 2.2: Password generation & strength**
 - **US-2.2.1** Generate a strong password with a configurable policy.
   - AC: CSPRNG-backed (`rand::rngs::OsRng`), respects length/character-class flags, `avoid_ambiguous` excludes the documented confusable set.
+- **US-2.2.3** As a user, I can generate a strong *master* password instead of typing one, both when creating a vault and when changing the master password later — in both the CLI and the GUI.
+  - AC: `vaultkeep init --generate`/`vaultkeep passwd --generate` (default length 24, all classes, avoid-ambiguous) print the generated password once and require an explicit "I have saved this" confirmation before the vault is created/rekeyed, since a master password is never stored anywhere and would otherwise be unrecoverable the instant the prompt returns. The GUI's create-vault screen and change-master-password modal offer the same generator via a "⟳" button that reveals the generated value with a save-it-now warning and a one-click copy, rather than a blocking confirmation.
 - **US-2.2.2** Get a strength/reuse/age report for stored entries.
   - AC: flags entries under a configurable entropy threshold, flags password reused across ≥2 entries, flags entries unrotated for > configurable days.
 

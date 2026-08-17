@@ -79,6 +79,32 @@ pub fn prompt_new_master_password(label: &str, use_stdin: bool) -> CliResult<Sec
     }
 }
 
+/// Generate a strong master password instead of asking the user to type one, per current
+/// guidance (NIST SP 800-63B / OWASP ASVS 5.0 V2.1 — a system-generated random secret of this
+/// length comfortably clears the recommended entropy bar). Unlike an *entry's* password, the
+/// master password is never stored anywhere in the vault format — it exists only in the user's
+/// head or their own separate record — so it must be shown and explicitly acknowledged before
+/// we proceed, or the vault becomes permanently unrecoverable the moment this prompt returns.
+pub fn prompt_generated_master_password(length: u16, use_stdin: bool) -> CliResult<Secret> {
+    let policy = vault_core::GeneratorPolicy { length, ..vault_core::GeneratorPolicy::default() };
+    let password = vault_core::generator::generate_password(&policy)?;
+    println!("Generated master password: {}", password.expose());
+    println!(
+        "This is shown once and is never stored anywhere — write it down or save it in a \
+         separate password manager now. If you lose it, this vault cannot be recovered."
+    );
+    if use_stdin {
+        // Scripted/CI caller: nothing to confirm interactively, the value is already on stdout.
+        return Ok(password);
+    }
+    loop {
+        if confirm("I have saved this password and am ready to continue")? {
+            return Ok(password);
+        }
+        eprintln!("Save the password printed above, then confirm (or Ctrl+C to abort).");
+    }
+}
+
 pub fn prompt_line(label: &str) -> CliResult<String> {
     use std::io::Write;
     print!("{label}: ");

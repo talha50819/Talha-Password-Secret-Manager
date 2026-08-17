@@ -54,6 +54,20 @@ opened entry — deliberately calls `.expose()`), mirroring the same "grep for `
 every place a secret escapes the vault" principle as [secret.rs](../crates/vault-core/src/secret.rs)
 and the CLI's `EntrySummary` (see [05-security-hardening.md §5.2](05-security-hardening.md)).
 
+**Master-password generator.** The create-vault form and the change-master-password modal both
+offer a "⟳ Generate" button next to the master-password field, calling the same
+`generate_password` command as the entry-password generator but with a fixed, deliberately
+stronger default policy (24 chars, all character classes, CSPRNG-backed — see
+[generator.rs](../crates/vault-core/src/generator.rs), current guidance per OWASP ASVS 5.0 V2.1 /
+NIST SP 800-63B Appendix A). Because a master password is never written to the vault in any
+recoverable form — unlike an entry's password, there is nothing to look up later — generating one
+reveals it in the field (switches from `type="password"` to `type="text"`) with an explicit
+warning and a one-click copy, rather than silently hiding it the way the entry-password generator
+does. The CLI equivalent is `init --generate`/`passwd --generate`, which prints the generated
+password once and requires an explicit "I have saved this" confirmation before proceeding — the
+GUI relies on the visible warning + reveal instead of a blocking confirmation, since there is no
+terminal-style modal prompt to gate on.
+
 **Clipboard.** Uses the official `tauri-plugin-clipboard-manager`, with the exact same
 hash/value-guarded auto-clear pattern as the CLI's [clipboard.rs](../crates/vault-cli/src/clipboard.rs):
 the frontend remembers what it wrote and only clears the clipboard after 20 seconds if it still
@@ -71,6 +85,7 @@ like the CLI, makes no network requests).
 | Init / unlock / lock | ✅ | ✅ |
 | CRUD entries, tags, notes, URL | ✅ | ✅ |
 | Password generator (inline, configurable) | ✅ | ✅ |
+| Generate a strong *master* password (create-vault / change-master-password) | ✅ (`init --generate`, `passwd --generate`) | ✅ ("⟳" next to the master-password field on the create-vault screen and the change-master-password modal) |
 | Strength/reuse/staleness report | ✅ (`check`) | ✅ ("Check" panel) |
 | TOTP code display + countdown | ✅ | ✅ (live-updating) |
 | Change master password | ✅ (`passwd`) | ✅ |

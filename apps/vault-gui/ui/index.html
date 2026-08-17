@@ -22,9 +22,20 @@
 
       <form id="form-create" class="auth-form hidden">
         <label for="create-password">New master password</label>
-        <input id="create-password" type="password" autocomplete="new-password" />
+        <div class="password-row">
+          <input id="create-password" type="password" autocomplete="new-password" />
+          <button type="button" id="btn-generate-create" title="Generate a strong password">⟳</button>
+        </div>
         <label for="create-confirm">Confirm master password</label>
         <input id="create-confirm" type="password" autocomplete="new-password" />
+        <div class="gen-actions hidden" id="create-gen-actions">
+          <button type="button" id="btn-create-toggle-visibility">Show</button>
+          <button type="button" id="btn-create-copy">Copy</button>
+          <p class="hint warn">
+            Generated — this is never stored anywhere. Write it down or save it in a separate
+            password manager now; if you lose it, this vault cannot be recovered.
+          </p>
+        </div>
         <p class="hint">At least 8 characters, and not one of the most common passwords (NIST SP 800-63B).</p>
         <button type="submit">Create vault</button>
         <p class="error" id="create-error"></p>
@@ -115,9 +126,20 @@
     <form id="form-passwd" class="modal">
       <h2>Change master password</h2>
       <label for="passwd-new">New master password</label>
-      <input id="passwd-new" type="password" autocomplete="new-password" />
+      <div class="password-row">
+        <input id="passwd-new" type="password" autocomplete="new-password" />
+        <button type="button" id="btn-generate-passwd" title="Generate a strong password">⟳</button>
+      </div>
       <label for="passwd-confirm">Confirm</label>
       <input id="passwd-confirm" type="password" autocomplete="new-password" />
+      <div class="gen-actions hidden" id="passwd-gen-actions">
+        <button type="button" id="btn-passwd-toggle-visibility">Show</button>
+        <button type="button" id="btn-passwd-copy">Copy</button>
+        <p class="hint warn">
+          Generated — this is never stored anywhere. Write it down or save it in a separate
+          password manager now; if you lose it, you will be permanently locked out.
+        </p>
+      </div>
       <div class="modal-actions">
         <button type="button" class="secondary" id="btn-passwd-cancel">Cancel</button>
         <button type="submit" class="primary">Change password</button>
