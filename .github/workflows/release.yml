@@ -55,8 +55,49 @@ jobs:
             dist/${{ matrix.asset_name }}
             dist/${{ matrix.asset_name }}.sha256
 
+  build-gui:
+    name: Build GUI installer (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux WebView/bundler prerequisites
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0.0" --locked
+      - name: Build GUI bundle
+        working-directory: apps/vault-gui
+        run: cargo tauri build
+      - name: Stage GUI installer artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist-gui
+          # Tauri's bundler output lives under target/release/bundle/<format>/*
+          find target/release/bundle -maxdepth 2 -type f \
+            \( -name "*.msi" -o -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" \) \
+            -exec cp {} dist-gui/ \;
+          cd dist-gui
+          for f in *; do
+            [ -f "$f" ] || continue
+            if command -v sha256sum >/dev/null; then sha256sum "$f" > "$f.sha256"; else shasum -a 256 "$f" > "$f.sha256"; fi
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vaultkeep-gui-${{ matrix.os }}
+          path: dist-gui/*
+
   publish:
-    needs: build
+    needs: [build, build-gui]
     runs-on: ubuntu-latest
     permissions:
       contents: write

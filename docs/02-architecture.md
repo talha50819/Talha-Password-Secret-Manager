@@ -108,6 +108,7 @@ vaultkeep/
 │   │   ├── src/strength.rs    # entropy estimate + common-password/blocklist + reuse check
 │   │   ├── src/totp.rs        # RFC 6238 TOTP code generation
 │   │   ├── src/audit.rs       # append-only local audit log (entry UUIDs only, no secrets)
+│   │   ├── src/paths.rs       # OS-default vault/audit-log paths — shared by every front end
 │   │   └── src/error.rs       # VaultError — deliberately low-information Display impl
 │   └── vault-cli/             # user-facing binary: `vaultkeep`
 │       ├── src/main.rs        # clap derive CLI, dispatch table
@@ -115,8 +116,12 @@ vaultkeep/
 │       │                      # passwd, export, import, audit_log, check, shell, completions
 │       ├── src/clipboard.rs   # arboard wrapper + hash-guarded auto-clear
 │       ├── src/session.rs     # in-memory unlocked session + idle watchdog thread (shell mode)
-│       └── src/config.rs      # OS-appropriate paths via `directories` crate
-├── tests/                     # workspace-level integration tests (assert_cmd against the binary)
+│       ├── src/config.rs      # thin wrapper over vault_core::paths
+│       └── tests/cli.rs       # integration tests (assert_cmd against the real vaultkeep binary)
+├── apps/
+│   └── vault-gui/             # desktop GUI (Tauri 2), reuses vault-core unchanged — see docs/13-gui.md
+│       ├── src/main.rs, commands.rs, state.rs   # Tauri command handlers + session state
+│       └── ui/                # plain HTML/CSS/vanilla JS frontend, no build step
 ├── .github/workflows/         # CI/CD (Phase 10)
 └── docs/                      # this documentation set
 ```

@@ -7,6 +7,26 @@ targets = []
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
+ignore = [
+    # All of the entries below are `unmaintained`-type advisories (not vulnerabilities — no
+    # exploit, no CVE) transitively pulled in only by apps/vault-gui's Tauri 2.x dependency
+    # tree, never by vault-core or vault-cli. Verified individually that every one of these is
+    # "unmaintained", not "vulnerability" (see docs/13-gui.md / docs/08-vapt-report.md).
+    #
+    # Group 1 — the gtk-rs GTK3 bindings (Tauri's Linux WebView backend still targets GTK3, not
+    # GTK4, as of this Tauri version). Upstream Tauri/tao/wry/muda issue; "no safe upgrade is
+    # available" per the advisories themselves. Re-review when Tauri migrates to GTK4 bindings.
+    "RUSTSEC-2024-0411", "RUSTSEC-2024-0412", "RUSTSEC-2024-0413", "RUSTSEC-2024-0414",
+    "RUSTSEC-2024-0415", "RUSTSEC-2024-0416", "RUSTSEC-2024-0417", "RUSTSEC-2024-0418",
+    "RUSTSEC-2024-0419", "RUSTSEC-2024-0420",
+    # Group 2 — the archived rust-unic project (`unic-*` crates), pulled in via `urlpattern` ->
+    # `tauri-utils` (Tauri's custom-protocol URL matching). Same "no safe upgrade" situation.
+    "RUSTSEC-2025-0075", "RUSTSEC-2025-0080", "RUSTSEC-2025-0081", "RUSTSEC-2025-0098",
+    "RUSTSEC-2025-0100",
+    # Group 3 — `proc-macro-error`, a build-time-only proc-macro dependency (not present in the
+    # shipped binary at all), unmaintained upstream, pulled in transitively by a Tauri macro dep.
+    "RUSTSEC-2024-0370",
+]
 
 [licenses]
 # Permissive, widely-vetted licenses only. Anything outside this list fails CI and must be
@@ -32,13 +52,14 @@ confidence-threshold = 0.8
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
-deny = [
-    # Explicitly banned: pulling any of these into vault-core would silently break the
-    # zero-networking guarantee in the threat model (docs/03-threat-model.md).
-    { name = "reqwest" },
-    { name = "hyper" },
-    { name = "tokio" },
-]
+# No blanket crate bans here: `cargo-deny` policy applies workspace-wide, and since the GUI
+# (apps/vault-gui) legitimately depends on `tokio` transitively via Tauri's async runtime, a
+# workspace-wide ban on it would be wrong, not protective. The actual guarantee this once tried
+# to approximate — that `vault-core` specifically carries zero networking dependencies — is
+# enforced precisely, per-package, by the `no-networking-in-core` job in
+# .github/workflows/ci.yml (`cargo tree -p vault-core`), which is the correct tool for a
+# per-crate constraint. See docs/05-security-hardening.md §5.5.
+deny = []
 
 [sources]
 unknown-registry = "deny"

@@ -64,6 +64,19 @@ implementation follows.
 
 - **US-8.1** Cross-platform CI matrix build + release pipeline producing signed-checksum artifacts for Windows/Linux/macOS.
 
+## Epic 9 — Desktop GUI (post-MVP, added by user request)
+
+- **US-9.1** As a user, I can create/unlock a vault from a desktop window instead of a terminal.
+  - AC: Tauri app reuses `vault-core` with zero modifications to its crypto/format/store code; auth screen branches correctly between "create" and "unlock" based on whether a vault already exists at the shared default path.
+  - DoD: verified by actually launching the built app and visually confirming both states via screenshot, not just code review — this caught a real default-path bug (`ProjectDirs` double-nesting) that no unit test covered, fixed in `vault-core/src/paths.rs`.
+- **US-9.2** As a user, I can add/edit/delete entries, generate passwords, and view TOTP codes from the GUI, at parity with the CLI's everyday workflow.
+  - AC: every Tauri command that returns entry data uses an explicit DTO — `EntrySummaryDto` (list/search) can never carry a secret field; `EntryDetailDto` (single-entry view) exposes one via a visible, greppable `.expose()` call, mirroring `vault-core`'s own `Secret`/`EntrySummary` design.
+- **US-9.3** As a user, the GUI auto-locks after inactivity, the same as CLI `shell` mode.
+  - AC: background idle-watchdog thread drops the in-memory `VaultStore` after 300s of no command activity; frontend polls and returns to the unlock screen.
+- **US-9.4** As a user, copying a password from the GUI clears the clipboard automatically.
+  - AC: same hash/value-guarded auto-clear pattern as the CLI's `clipboard.rs`, via `tauri-plugin-clipboard-manager`.
+- Deliberately out of scope for the initial GUI release (CLI-only for now, tracked in [12-production-readiness.md](12-production-readiness.md)): keyfile-bound vaults, encrypted export/import, KDF profile selection.
+
 ## Sprint Plan (MVP = Sprints 1–4)
 
 | Sprint | Goal | Epics |

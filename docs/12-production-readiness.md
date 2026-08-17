@@ -5,13 +5,13 @@
 | Dimension | Evidence | Status |
 |---|---|---|
 | **Secure** | Argon2id + XChaCha20-Poly1305, fail-closed auth, redacted secret types, no network I/O, cross-process locking, master-password NIST policy enforcement — see [05-security-hardening.md](05-security-hardening.md), [08-vapt-report.md](08-vapt-report.md) | ✅ |
-| **Tested** | 55 `vault-core` unit tests + 4 `vault-cli` unit tests + 13 CLI integration tests = **72 automated tests, all passing**; `clippy -D warnings` clean; `cargo audit`/`cargo deny` clean (after fixing real findings — see below) | ✅ |
+| **Tested** | 58 `vault-core` unit tests + 4 `vault-cli` unit tests + 13 CLI integration tests = **75 automated tests, all passing**; the GUI was additionally verified by building it, launching the real window, and visually confirming the create-vault and unlock flows via screenshots (see [13-gui.md](13-gui.md)) — that pass caught and fixed a real default-vault-path bug that no unit test had covered; `clippy -D warnings` clean across the whole workspace including the GUI; `cargo audit`/`cargo deny` clean (after fixing/acknowledging real findings — see below) | ✅ |
 | **Documented** | Research, HLD/LLD, threat model, data model, CLI reference, backlog, hardening report, VAPT report, performance/DR report, DevSecOps report, compliance mapping (this document set) | ✅ |
 | **Observable** | Structured `tracing` logging (human/JSON), typed exit codes, local audit trail | ✅ |
 | **Recoverable** | Encrypted export/import, documented backup/DR procedure, atomic writes, RTO/RPO discussed | ✅ |
 | **Maintainable** | Small, reviewed dependency set; workspace split (`vault-core`/`vault-cli`); consistent module-per-concern layout; CI gates on every push | ✅ |
 | **Scalable** (for its scope) | Tested reasoning up to thousands of entries; single-user local scale, not a concurrent-users concern by design | ✅ |
-| **Deployable** | Native per-OS builds via CI release workflow, checksummed artifacts, no infrastructure to provision | ✅ |
+| **Deployable** | Native per-OS builds via CI release workflow for both the CLI binary and the GUI installer (MSI/NSIS, DMG, deb/rpm/AppImage), checksummed artifacts, published to GitHub Releases, no infrastructure to provision | ✅ |
 
 ## 12.2 Critical/High Severity Issues
 
@@ -27,6 +27,11 @@ before this report, not merely logged:
   `atomic-polyfill`, an unpinned internal path dependency, an unreviewed-but-legitimate license)
   — all fixed in-session; both scanners report clean as of this document
   ([08-vapt-report.md §8.3](08-vapt-report.md)).
+- Adding the GUI introduced 15 further `unmaintained`-type advisories (not vulnerabilities),
+  all transitively pulled in by Tauri's own dependency tree (gtk-rs GTK3 bindings, the archived
+  rust-unic project, `proc-macro-error`) — reviewed individually, confirmed none are exploitable
+  vulnerabilities, and explicitly acknowledged with justification in [deny.toml](../deny.toml)
+  rather than silently suppressed or left permanently red in CI.
 
 Per the project's own Definition of Done ([04-backlog.md](04-backlog.md)), this is the gate
 condition for calling the MVP production-ready, and it is met.
@@ -52,10 +57,12 @@ condition for calling the MVP production-ready, and it is met.
    specific providers and should be treated as unverified, not guaranteed).
 6. **Windows file permissions rely on default per-user `%APPDATA%` scoping**, not an explicit
    ACL tightened by the application itself (Unix gets an explicit `0600`).
-7. **No GUI.** CLI-only in this MVP, by the scope decision recorded in
-   [01-research-and-discovery.md §1.2](01-research-and-discovery.md).
-8. **No sync/multi-device support.** Local-only by design; exporting/importing is the current
-   cross-device workflow.
+7. **GUI covers the everyday workflow, not every CLI capability.** The desktop GUI (Tauri, see
+   [13-gui.md](13-gui.md)) is implemented and reuses `vault-core` unchanged, but does not yet
+   expose keyfile-bound vaults, encrypted export/import, or KDF profile selection — those remain
+   CLI-only for now (tracked in the roadmap below).
+8. **No sync/multi-device support.** Local-only by design; exporting/importing (CLI today; GUI
+   roadmap item) is the current cross-device workflow.
 9. **Password generator/strength estimator are intentionally simple** (character-class entropy
    estimate + a small embedded common-password list), not a full statistical model like
    zxcvbn, and there is no online breach-database check (by design — see limitation of the
@@ -68,8 +75,9 @@ condition for calling the MVP production-ready, and it is met.
 | High | Hash-chained, tamper-evident audit log | Closes the last open Medium-adjacent VAPT-style gap (V-16) |
 | High | PID-liveness check for the advisory vault lock | Removes the manual-recovery step for the stale-lock limitation |
 | Medium | OS keychain integration (Windows Credential Manager / macOS Keychain / Secret Service) as an optional local unlock convenience layer | Common user expectation, doesn't weaken the core zero-knowledge model if implemented as an additional, optional unlock path |
-| Medium | GUI (Tauri), reusing `vault-core` unchanged | `vault-core`'s CLI-independence was a deliberate architectural choice specifically to enable this |
+| ~~Medium~~ **Done** | ~~GUI (Tauri), reusing `vault-core` unchanged~~ — implemented, see [13-gui.md](13-gui.md) | `vault-core`'s CLI-independence was a deliberate architectural choice specifically to enable this, and it held: zero lines changed in `vault-core`'s crypto/format/store to add the GUI |
 | Medium | Windows explicit ACL tightening | Closes the Windows/Unix permission-hardening asymmetry |
+| Medium | GUI: keyfile-bound vault support, encrypted export/import, KDF profile selection | Brings the GUI to full parity with the CLI's capability set (see [13-gui.md](13-gui.md)) |
 | Low | Opt-in HIBP k-anonymity breach check | Valuable, but the first network call this project would ever make — needs its own focused threat-model update before landing |
 | Low | Package manager distribution (winget/Homebrew/apt/AUR formulas) | Improves install UX beyond raw GitHub Release binaries |
 | Low | Code-signing release binaries (requires a paid certificate the project doesn't currently hold) | Reduces first-run OS/AV scan friction observed during release-binary smoke testing ([09-performance-and-reliability.md §9.1](09-performance-and-reliability.md)) and improves install trust signals generally |

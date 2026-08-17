@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vaultkeep</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============================== Auth screen ============================== -->
+  <section id="screen-auth" class="screen">
+    <div class="auth-card">
+      <h1>Vaultkeep</h1>
+      <p class="muted" id="auth-subtitle">Checking for an existing vault…</p>
+
+      <form id="form-unlock" class="auth-form hidden">
+        <label for="unlock-password">Master password</label>
+        <input id="unlock-password" type="password" autocomplete="current-password" autofocus />
+        <button type="submit">Unlock</button>
+        <p class="error" id="unlock-error"></p>
+      </form>
+
+      <form id="form-create" class="auth-form hidden">
+        <label for="create-password">New master password</label>
+        <input id="create-password" type="password" autocomplete="new-password" />
+        <label for="create-confirm">Confirm master password</label>
+        <input id="create-confirm" type="password" autocomplete="new-password" />
+        <p class="hint">At least 8 characters, and not one of the most common passwords (NIST SP 800-63B).</p>
+        <button type="submit">Create vault</button>
+        <p class="error" id="create-error"></p>
+      </form>
+
+      <p class="muted small" id="auth-path"></p>
+    </div>
+  </section>
+
+  <!-- ============================== Main screen ============================== -->
+  <section id="screen-main" class="screen hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <strong>Vaultkeep</strong>
+        <span class="muted small" id="entry-count"></span>
+      </div>
+      <div class="topbar-right">
+        <input id="search-box" type="search" placeholder="Search…" />
+        <button id="btn-add" class="primary">+ Add entry</button>
+        <button id="btn-check" title="Strength report">Check</button>
+        <button id="btn-activity" title="Audit log">Activity</button>
+        <button id="btn-passwd" title="Change master password">Master pw</button>
+        <button id="btn-lock" title="Lock now">Lock</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="entry-list" id="entry-list"></aside>
+
+      <main class="detail" id="detail-pane">
+        <p class="muted empty-state">Select an entry, or add a new one.</p>
+      </main>
+    </div>
+  </section>
+
+  <!-- ============================== Add/Edit modal ============================== -->
+  <div id="modal-entry" class="modal-backdrop hidden">
+    <form id="form-entry" class="modal">
+      <h2 id="entry-modal-title">Add entry</h2>
+      <input type="hidden" id="entry-id" />
+
+      <label for="entry-title">Title</label>
+      <input id="entry-title" required />
+
+      <label for="entry-username">Username</label>
+      <input id="entry-username" />
+
+      <label for="entry-password">Password</label>
+      <div class="password-row">
+        <input id="entry-password" type="text" autocomplete="off" />
+        <button type="button" id="btn-generate-inline" title="Generate">⟳</button>
+      </div>
+
+      <details id="generator-panel">
+        <summary>Generator options</summary>
+        <div class="gen-options">
+          <label>Length <input id="gen-length" type="number" min="4" max="128" value="20" /></label>
+          <label><input id="gen-upper" type="checkbox" checked /> Upper A-Z</label>
+          <label><input id="gen-lower" type="checkbox" checked /> Lower a-z</label>
+          <label><input id="gen-digits" type="checkbox" checked /> Digits 0-9</label>
+          <label><input id="gen-symbols" type="checkbox" checked /> Symbols</label>
+          <label><input id="gen-ambiguous" type="checkbox" checked /> Avoid ambiguous (0/O, 1/l/I)</label>
+        </div>
+      </details>
+
+      <label for="entry-url">URL</label>
+      <input id="entry-url" type="text" />
+
+      <label for="entry-tags">Tags (comma-separated)</label>
+      <input id="entry-tags" />
+
+      <label for="entry-totp">TOTP seed (base32, optional)</label>
+      <input id="entry-totp" />
+
+      <label for="entry-notes">Notes</label>
+      <textarea id="entry-notes" rows="3"></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="btn-entry-cancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+      <p class="error" id="entry-error"></p>
+    </form>
+  </div>
+
+  <!-- ============================== Change master password modal ============================== -->
+  <div id="modal-passwd" class="modal-backdrop hidden">
+    <form id="form-passwd" class="modal">
+      <h2>Change master password</h2>
+      <label for="passwd-new">New master password</label>
+      <input id="passwd-new" type="password" autocomplete="new-password" />
+      <label for="passwd-confirm">Confirm</label>
+      <input id="passwd-confirm" type="password" autocomplete="new-password" />
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="btn-passwd-cancel">Cancel</button>
+        <button type="submit" class="primary">Change password</button>
+      </div>
+      <p class="error" id="passwd-error"></p>
+    </form>
+  </div>
+
+  <!-- ============================== Check / Activity side panels ============================== -->
+  <div id="modal-check" class="modal-backdrop hidden">
+    <div class="modal wide">
+      <h2>Strength &amp; reuse report</h2>
+      <div id="check-results" class="scroll-panel"></div>
+      <div class="modal-actions"><button type="button" class="secondary" id="btn-check-close">Close</button></div>
+    </div>
+  </div>
+
+  <div id="modal-activity" class="modal-backdrop hidden">
+    <div class="modal wide">
+      <h2>Recent activity</h2>
+      <p class="muted small">Local audit trail — timestamps and operation types only, never titles or secret values.</p>
+      <div id="activity-results" class="scroll-panel"></div>
+      <div class="modal-actions"><button type="button" class="secondary" id="btn-activity-close">Close</button></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
